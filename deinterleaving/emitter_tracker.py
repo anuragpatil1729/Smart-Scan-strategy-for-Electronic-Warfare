@@ -12,7 +12,6 @@ import numpy as np
 
 from deinterleaving.dbscan.clustering import SpatialSpectralDBSCAN, ClusterSummary
 from deinterleaving.sedcam.pri_transform import PRITransformer, PRIAnalysisResult
-from reinforcement_learning.state.upstream_interface import UpstreamEmitterRecord
 
 
 @dataclass
@@ -37,27 +36,34 @@ class EmitterTrack:
     uncertainty: float = 0.5
     identity_confidence: float = 0.5
 
-    def to_upstream_record(self) -> UpstreamEmitterRecord:
+    def to_upstream_record(self) -> Any:
         """Map estimated emitter parameters into RL UpstreamEmitterRecord."""
+        from reinforcement_learning.state.upstream_interface import UpstreamEmitterRecord
+
         # Map operational mode heuristic
         if self.estimated_pri_us < 50.0 or self.mean_pw_us < 1.0:
             mode = "track" if self.threat_level >= 0.7 else "acquisition"
         else:
             mode = "search"
 
+        threat = float(np.nan_to_num(self.threat_level, nan=0.5))
+        act = float(np.nan_to_num(self.activity_prob, nan=0.5))
+        conf = float(np.nan_to_num(self.identity_confidence, nan=0.5))
+        unc = float(np.nan_to_num(self.uncertainty, nan=0.5))
+
         return UpstreamEmitterRecord(
             emitter_id=self.track_id,
-            threat_level=float(np.clip(self.threat_level, 0.0, 1.0)),
-            activity_prob=float(np.clip(self.activity_prob, 0.0, 1.0)),
-            identity_confidence=float(np.clip(self.identity_confidence, 0.0, 1.0)),
-            uncertainty=float(np.clip(self.uncertainty, 0.0, 1.0)),
+            threat_level=float(np.clip(threat, 0.0, 1.0)),
+            activity_prob=float(np.clip(act, 0.0, 1.0)),
+            identity_confidence=float(np.clip(conf, 0.0, 1.0)),
+            uncertainty=float(np.clip(unc, 0.0, 1.0)),
             novelty_score=0.10,
-            last_intercept_timestamp=self.last_intercept_us * 1e-6,  # convert to seconds
+            last_intercept_timestamp=float(np.nan_to_num(self.last_intercept_us * 1e-6, nan=0.0)),
             operational_mode=mode,
             dwell_cost=0.10,
-            carrier_freq_mhz=self.mean_freq_mhz,
-            pri_us=self.estimated_pri_us,
-            snr_db=self.mean_amplitude_db,
+            carrier_freq_mhz=float(np.nan_to_num(self.mean_freq_mhz, nan=9000.0)),
+            pri_us=float(np.nan_to_num(self.estimated_pri_us, nan=250.0)),
+            snr_db=float(np.nan_to_num(self.mean_amplitude_db, nan=-30.0)),
         )
 
 
