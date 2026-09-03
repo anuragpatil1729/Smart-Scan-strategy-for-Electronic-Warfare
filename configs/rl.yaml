@@ -1,0 +1,94 @@
+# ==============================================================================
+# Reinforcement Learning Subsystem Configuration
+# Smart Scan Strategy for Electronic Warfare
+# ==============================================================================
+
+environment:
+  num_emitters: 8
+  max_steps_per_episode: 100
+  initial_resource_budget: 100.0
+  dwell_cost: 1.0
+  max_revisit_window: 10        # Revisit window before track degradation begins
+  drop_timeout: 20              # Max unobserved steps before track drops (lost track)
+  observation_dim: 84           # 8 emitters * 10 estimation features + 4 global features
+  uncertainty_drift_rate: 0.04  # Natural uncertainty growth per step for unobserved emitters
+  uncertainty_reduction_rate: 0.65  # Uncertainty reduction factor when observed and transmitting
+
+emitter_defaults:
+  modes:
+    idle: 0.0
+    search: 0.25
+    acquisition: 0.50
+    track: 0.75
+    guidance: 1.0
+  threat_levels:
+    low: 0.20
+    medium: 0.50
+    high: 0.80
+    critical: 1.00
+
+reward_weights:
+  w_threat: 2.5       # Reward for intercepting high-threat active transmissions
+  w_detect: 1.0       # Base reward for any successful transmission interception
+  w_info: 2.0         # Reward for actual (ex-post) parameter uncertainty reduction
+  w_track: 2.0        # Reward for maintaining active confirmed threat tracks within revisit window
+  w_drop: 3.5         # Penalty when an active confirmed threat track drops due to neglect
+  w_cost: 0.2         # Penalty for sensor dwell energy / budget expenditure
+  w_miss: 1.5         # Penalty for unobserved active threat transmissions in current step
+  w_redundant: 1.0    # Penalty for repeatedly scanning already saturated (zero-uncertainty) emitters
+
+ppo:
+  learning_rate: 0.0003
+  n_steps: 256
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  net_arch:
+    pi: [128, 128]
+    vf: [128, 128]
+
+double_dqn:
+  learning_rate: 0.0005
+  buffer_size: 50000
+  learning_starts: 200
+  batch_size: 64
+  gamma: 0.99
+  train_freq: 4
+  gradient_steps: 1
+  target_update_interval: 250
+  exploration_initial_eps: 1.0
+  exploration_final_eps: 0.05
+  exploration_fraction: 0.3
+  net_arch: [128, 128]
+
+standard_dqn:
+  learning_rate: 0.0005
+  buffer_size: 50000
+  learning_starts: 200
+  batch_size: 64
+  gamma: 0.99
+  train_freq: 4
+  gradient_steps: 1
+  target_update_interval: 250
+  exploration_initial_eps: 1.0
+  exploration_final_eps: 0.05
+  exploration_fraction: 0.3
+  net_arch: [128, 128]
+
+evaluation:
+  eval_episodes: 20
+  scenarios:
+    - name: "dense_fleet"
+      description: "8 diverse emitters with mixed search and track behaviors"
+      threat_bias: "balanced"
+    - name: "high_threat_surge"
+      description: "Multiple high and critical threats with short revisit deadlines"
+      threat_bias: "high"
+    - name: "sparse_agile"
+      description: "Intermittent agile burst emitters competing for sensor dwells"
+      threat_bias: "sparse"
