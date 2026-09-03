@@ -74,15 +74,20 @@ class SpatialSpectralDBSCAN:
             idx = np.where(lbls == c)[0]
             cluster_pdws = pdws[idx]
 
+            n_pulses = int(len(idx))
+            std_aoa = float(np.std(cluster_pdws[:, 3], ddof=0)) if n_pulses > 1 else 0.0
+            std_freq = float(np.std(cluster_pdws[:, 1], ddof=0)) if n_pulses > 1 else 0.0
+            std_pw = float(np.std(cluster_pdws[:, 2], ddof=0)) if n_pulses > 1 else 0.0
+
             summary = ClusterSummary(
                 cluster_id=int(c),
-                num_pulses=int(len(idx)),
+                num_pulses=n_pulses,
                 mean_aoa_deg=float(np.mean(cluster_pdws[:, 3])),
-                std_aoa_deg=float(np.std(cluster_pdws[:, 3])),
+                std_aoa_deg=0.0 if np.isnan(std_aoa) else std_aoa,
                 mean_freq_mhz=float(np.mean(cluster_pdws[:, 1])),
-                std_freq_mhz=float(np.std(cluster_pdws[:, 1])),
+                std_freq_mhz=0.0 if np.isnan(std_freq) else std_freq,
                 mean_pw_us=float(np.mean(cluster_pdws[:, 2])),
-                std_pw_us=float(np.std(cluster_pdws[:, 2])),
+                std_pw_us=0.0 if np.isnan(std_pw) else std_pw,
                 mean_amplitude_db=float(np.mean(cluster_pdws[:, 4])),
                 indices=idx,
             )
