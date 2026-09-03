@@ -12,6 +12,7 @@ import numpy as np
 
 from deinterleaving.dbscan.clustering import SpatialSpectralDBSCAN, ClusterSummary
 from deinterleaving.sedcam.pri_transform import PRITransformer, PRIAnalysisResult
+from reinforcement_learning.state.upstream_interface import UpstreamEmitterRecord
 
 
 @dataclass
@@ -36,10 +37,8 @@ class EmitterTrack:
     uncertainty: float = 0.5
     identity_confidence: float = 0.5
 
-    def to_upstream_record(self) -> Any:
+    def to_upstream_record(self) -> UpstreamEmitterRecord:
         """Map estimated emitter parameters into RL UpstreamEmitterRecord."""
-        from reinforcement_learning.state.upstream_interface import UpstreamEmitterRecord
-
         # Map operational mode heuristic
         if self.estimated_pri_us < 50.0 or self.mean_pw_us < 1.0:
             mode = "track" if self.threat_level >= 0.7 else "acquisition"

@@ -16,7 +16,6 @@ import gymnasium as gym
 from gymnasium import spaces
 
 from pdw.extraction.dataset_reader import TSRDDatasetReader, PulseTrainSample
-from deinterleaving.emitter_tracker import EmitterTracker, EmitterTrack
 from reinforcement_learning.state.upstream_interface import (
     UpstreamScanContext,
     UpstreamStateAdapter,
@@ -71,6 +70,8 @@ class RealDataEWEnvironment(gym.Env):
             raise FileNotFoundError(f"No scenario files found in {self.split}")
 
         self.file_index = 0
+        from deinterleaving.emitter_tracker import EmitterTracker, EmitterTrack
+        self.EmitterTrack = EmitterTrack
         self.tracker = EmitterTracker()
         self.adapter = UpstreamStateAdapter(num_emitters=self.num_emitters)
 
@@ -119,7 +120,7 @@ class RealDataEWEnvironment(gym.Env):
         while len(self.tracks) < self.num_emitters:
             idx = len(self.tracks)
             self.tracks.append(
-                EmitterTrack(
+                self.EmitterTrack(
                     track_id=f"dummy_{idx}",
                     num_pulses=0,
                     mean_freq_mhz=0.0,
