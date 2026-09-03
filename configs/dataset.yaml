@@ -1,0 +1,39 @@
+# ==============================================================================
+# Turing Synthetic Radar Dataset (TSRD) Configuration
+# Smart Scan Strategy for Electronic Warfare
+# ==============================================================================
+
+dataset:
+  root_path: "datasets/synthetic/turing_radar_data"
+  default_mode: "scan"  # "scan" (realistic receiver) or "stare" (wideband oracle)
+  default_split: "train"  # "train", "val", or "test"
+
+  feature_channels:
+    toa: 0          # Time of Arrival (microseconds)
+    frequency: 1    # Center Frequency (MHz)
+    pulse_width: 2  # Pulse Width (microseconds)
+    aoa: 3          # Angle of Arrival (degrees, 0-360)
+    amplitude: 4    # Received Amplitude / Power (dB)
+
+  splits:
+    train_scan: "scan/train_scan"
+    val_scan: "scan/val_scan"
+    test_scan: "scan/test_scan"
+    train_stare: "stare/train_stare"
+    val_stare: "stare/val_stare"
+    test_stare: "stare/test_stare"
+
+deinterleaving:
+  spatial_spectral_dbscan:
+    eps: 0.15
+    min_samples: 5
+    feature_weights:
+      frequency: 1.0
+      pulse_width: 1.0
+      aoa: 1.5      # Higher weight on spatial angle of arrival
+  
+  pri_analysis:
+    min_pri_us: 10.0
+    max_pri_us: 5000.0
+    num_bins: 500
+    peak_prominence: 0.1
