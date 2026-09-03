@@ -17,15 +17,20 @@ PROJECT_ROOT = str(Path(__file__).resolve().parent)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-if "tensorflow" not in sys.modules:
-    sys.modules["tensorflow"] = None
+import os
+import warnings
+
+warnings.filterwarnings("ignore")
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 def run_command(cmd_args: list[str], description: str) -> int:
     """Execute a subprocess command and stream output."""
     print(f"\n{'='*70}\n[RUNNING] {description}\n{'='*70}")
     print(f"$ {' '.join(cmd_args)}\n")
-    proc = subprocess.run(cmd_args)
+    custom_env = os.environ.copy()
+    custom_env["PYTHONWARNINGS"] = "ignore"
+    proc = subprocess.run(cmd_args, env=custom_env)
     if proc.returncode != 0:
         print(f"\n[ERROR] Command failed with exit code {proc.returncode}: {description}")
     return proc.returncode

@@ -20,6 +20,9 @@ if PROJECT_ROOT not in sys.path:
 if "tensorflow" not in sys.modules:
     sys.modules["tensorflow"] = None
 
+import warnings
+warnings.filterwarnings("ignore")
+
 from reinforcement_learning.environment.ew_environment import EWEnvironment
 from reinforcement_learning.reward.reward_function import RewardWeights
 from reinforcement_learning.ppo.agent import PPOAgent
