@@ -66,16 +66,21 @@ class EmitterTrack:
         )
 
 
+from temporal_model.emitter_representation.encoder import TemporalEmitterEncoder
+
+
 class EmitterTracker:
-    """End-to-end deinterleaver and emitter tracking engine."""
+    """End-to-end deinterleaver and emitter tracking engine (Block 4 & 5)."""
 
     def __init__(
         self,
         clusterer: Optional[SpatialSpectralDBSCAN] = None,
         pri_analyzer: Optional[PRITransformer] = None,
+        temporal_encoder: Optional[TemporalEmitterEncoder] = None,
     ) -> None:
         self.clusterer = clusterer or SpatialSpectralDBSCAN()
         self.pri_analyzer = pri_analyzer or PRITransformer()
+        self.temporal_encoder = temporal_encoder or TemporalEmitterEncoder()
 
     def process_pulse_train(
         self,
@@ -124,15 +129,20 @@ class EmitterTracker:
             if pri_result.pri_type in ("staggered", "agile"):
                 threat = min(1.0, threat + 0.15)
 
-            # Activity probability estimated from burst pulse density
+            # Temporal LSTM representation & activity prediction (Block 5.1 & 5.2)
+            temporal_feats = self.temporal_encoder.encode_cluster(cluster_pdws)
+            lstm_act = float(temporal_feats["activity_prob"])
+            lstm_unc = float(temporal_feats["temporal_uncertainty"])
+
+            # Activity probability estimated from LSTM and pulse burst density
             cluster_duration = float(cluster_pdws[-1, 0] - cluster_pdws[0, 0]) if len(cluster_pdws) > 1 else 1.0
             duty_cycle = (summary.num_pulses * summary.mean_pw_us) / max(1.0, cluster_duration)
-            activity_prob = float(np.clip(duty_cycle * 100.0 + 0.3, 0.1, 0.95))
+            activity_prob = float(np.clip(0.6 * lstm_act + 0.4 * (duty_cycle * 100.0 + 0.3), 0.1, 0.95))
 
-            # Parameter uncertainty derived from frequency and PRI jitter
+            # Parameter uncertainty combining temporal LSTM uncertainty and PRI jitter
             rel_freq_std = summary.std_freq_mhz / max(1.0, summary.mean_freq_mhz)
             rel_pri_std = pri_result.jitter_percentage / 100.0
-            uncertainty = float(np.clip(0.5 * rel_freq_std * 10.0 + 0.5 * rel_pri_std + (1.0 - pri_result.confidence) * 0.5, 0.05, 0.95))
+            uncertainty = float(np.clip(0.5 * lstm_unc + 0.3 * rel_freq_std * 10.0 + 0.2 * rel_pri_std, 0.05, 0.95))
 
             track = EmitterTrack(
                 track_id=f"track_{summary.cluster_id}",
