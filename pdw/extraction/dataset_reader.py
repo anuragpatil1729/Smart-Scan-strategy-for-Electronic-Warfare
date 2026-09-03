@@ -104,7 +104,7 @@ class TSRDDatasetReader:
             filepath = files[index_or_filename % len(files)]
         else:
             filepath = Path(index_or_filename)
-            if not filepath.is_absolute():
+            if not filepath.exists() and not filepath.is_absolute():
                 subdir = self.SPLIT_SUBDIRS.get(split, split)
                 filepath = self.root_path / subdir / filepath
 
